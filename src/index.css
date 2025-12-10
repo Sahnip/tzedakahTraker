@@ -1,0 +1,193 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&display=swap');
+
+@layer base {
+  :root {
+    /* Warm cream background */
+    --background: 45 30% 97%;
+    --foreground: 220 25% 15%;
+
+    /* Cards with subtle warmth */
+    --card: 45 25% 99%;
+    --card-foreground: 220 25% 15%;
+
+    --popover: 45 25% 99%;
+    --popover-foreground: 220 25% 15%;
+
+    /* Deep teal - trust, growth, spiritual */
+    --primary: 168 65% 38%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Soft sage secondary */
+    --secondary: 150 20% 94%;
+    --secondary-foreground: 168 65% 28%;
+
+    /* Muted warm gray */
+    --muted: 45 15% 92%;
+    --muted-foreground: 220 15% 45%;
+
+    /* Indigo accent for info/navigation */
+    --accent: 235 60% 58%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Warm amber for pending/attention */
+    --warning: 38 95% 55%;
+    --warning-foreground: 38 95% 15%;
+
+    /* Success green for completed */
+    --success: 152 60% 42%;
+    --success-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 45 20% 88%;
+    --input: 45 20% 88%;
+    --ring: 168 65% 38%;
+
+    --radius: 1rem;
+
+    /* Custom gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(168 65% 38%) 0%, hsl(168 75% 32%) 100%);
+    --gradient-success: linear-gradient(135deg, hsl(152 60% 42%) 0%, hsl(168 65% 38%) 100%);
+    --gradient-warning: linear-gradient(135deg, hsl(38 95% 55%) 0%, hsl(28 95% 50%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(45 25% 99%) 0%, hsl(45 20% 97%) 100%);
+
+    /* Shadows */
+    --shadow-sm: 0 2px 8px -2px hsl(220 25% 15% / 0.08);
+    --shadow-md: 0 8px 24px -8px hsl(220 25% 15% / 0.12);
+    --shadow-lg: 0 16px 48px -12px hsl(220 25% 15% / 0.16);
+    --shadow-glow: 0 0 40px hsl(168 65% 38% / 0.25);
+
+    /* Typography */
+    --font-sans: 'DM Sans', system-ui, sans-serif;
+    --font-display: 'Fraunces', Georgia, serif;
+
+    /* Sidebar (keeping defaults) */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 220 25% 8%;
+    --foreground: 45 20% 95%;
+
+    --card: 220 25% 12%;
+    --card-foreground: 45 20% 95%;
+
+    --popover: 220 25% 12%;
+    --popover-foreground: 45 20% 95%;
+
+    --primary: 168 65% 48%;
+    --primary-foreground: 220 25% 8%;
+
+    --secondary: 220 20% 18%;
+    --secondary-foreground: 168 50% 70%;
+
+    --muted: 220 20% 18%;
+    --muted-foreground: 220 15% 60%;
+
+    --accent: 235 60% 65%;
+    --accent-foreground: 0 0% 100%;
+
+    --warning: 38 95% 60%;
+    --warning-foreground: 38 95% 10%;
+
+    --success: 152 60% 50%;
+    --success-foreground: 220 25% 8%;
+
+    --destructive: 0 72% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 20% 20%;
+    --input: 220 20% 20%;
+    --ring: 168 65% 48%;
+
+    --gradient-card: linear-gradient(180deg, hsl(220 25% 12%) 0%, hsl(220 25% 10%) 100%);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    font-family: var(--font-sans);
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display);
+  }
+
+  .font-sans {
+    font-family: var(--font-sans);
+  }
+
+  .shadow-card {
+    box-shadow: var(--shadow-sm);
+  }
+
+  .shadow-card-hover {
+    box-shadow: var(--shadow-md);
+  }
+
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+
+  .gradient-success {
+    background: var(--gradient-success);
+  }
+
+  .gradient-warning {
+    background: var(--gradient-warning);
+  }
+
+  .gradient-card {
+    background: var(--gradient-card);
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}

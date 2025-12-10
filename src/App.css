@@ -1,0 +1,12 @@
+/* Safe area for mobile devices */
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* Remove default body padding from template */
+#root {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
