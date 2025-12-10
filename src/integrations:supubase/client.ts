@@ -28,3 +28,8 @@ export const supabase = createClient<Database>(
     }
   }
 );
+
+// Expose supabase globally for debugging (only in development)
+if (import.meta.env.DEV && typeof window !== 'undefined') {
+  (window as any).supabase = supabase;
+}
