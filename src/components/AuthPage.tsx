@@ -91,7 +91,7 @@ export function AuthPage({ onAuthSuccess }: AuthPageProps) {
           <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-2">
             <span className="text-3xl">🙏</span>
           </div>
-          <CardTitle className="text-2xl">Tzedakah Tracker</CardTitle>
+          <CardTitle className="text-2xl">Give Maasser</CardTitle>
           <CardDescription>
             Gérez vos dons et votre maasser
           </CardDescription>

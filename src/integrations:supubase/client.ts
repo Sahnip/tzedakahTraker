@@ -5,6 +5,13 @@ import type { Database } from './types';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
+// Debug: Log environment variables (only in development)
+if (import.meta.env.DEV) {
+  console.log('🔍 Debug - Variables d\'environnement:');
+  console.log('  VITE_SUPABASE_URL:', SUPABASE_URL ? `${SUPABASE_URL.substring(0, 30)}...` : '❌ UNDEFINED');
+  console.log('  VITE_SUPABASE_PUBLISHABLE_KEY:', SUPABASE_PUBLISHABLE_KEY ? `${SUPABASE_PUBLISHABLE_KEY.substring(0, 30)}...` : '❌ UNDEFINED');
+}
+
 // Validate environment variables
 if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
   console.error('❌ Variables d\'environnement Supabase manquantes !');
@@ -12,6 +19,8 @@ if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
   console.error('VITE_SUPABASE_URL=https://votre-projet.supabase.co');
   console.error('VITE_SUPABASE_PUBLISHABLE_KEY=votre-clé-publique');
   console.error('\nCes valeurs se trouvent dans : Supabase Dashboard → Settings → API');
+  console.error('\n💡 IMPORTANT: Redémarrez le serveur après avoir modifié le fichier .env !');
+  console.error('   Arrêtez le serveur (Ctrl+C) puis relancez: npm run dev');
 }
 
 // Import the supabase client like this:
