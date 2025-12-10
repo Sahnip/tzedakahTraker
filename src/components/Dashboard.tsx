@@ -3,16 +3,7 @@ import { ProgressRing } from './ProgressRing';
 import { StatCard } from './StatCard';
 import { ActivityItem } from './ActivityItem';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { TrendingUp, Heart, Clock, Wallet, LogOut, User } from 'lucide-react';
-import { User as UserType } from '@/hooks/useAuth';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { toast } from 'sonner';
+import { TrendingUp, Heart, Clock, Wallet } from 'lucide-react';
 
 interface DashboardProps {
   yearSummary: YearSummary;
@@ -24,8 +15,6 @@ interface DashboardProps {
   beneficiaries: Beneficiary[];
   availableYears: number[];
   onYearChange: (year: number) => void;
-  user: UserType | null;
-  onLogout: () => void;
 }
 
 export function Dashboard({
@@ -33,45 +22,18 @@ export function Dashboard({
   recentActivity,
   beneficiaries,
   availableYears,
-  onYearChange,
-  user,
-  onLogout
+  onYearChange
 }: DashboardProps) {
-  const handleLogout = () => {
-    onLogout();
-    toast.success('Déconnexion réussie', {
-      description: 'À bientôt !',
-    });
-  };
   const getBeneficiaryName = (id: string) => beneficiaries.find(b => b.id === id)?.name || 'Inconnu';
   return <div className="space-y-6 animate-fade-in pb-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex-1 text-center">
-          <h1 className="text-3xl font-display font-bold text-foreground">
-            Maasser
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Donne le Maasser pour t'enrichir    
-          </p>
-        </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-9 w-9">
-              <User className="h-5 w-5" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <div className="px-2 py-1.5 text-sm">
-              <p className="font-medium">{user?.name || 'Utilisateur'}</p>
-              <p className="text-xs text-muted-foreground">{user?.email}</p>
-            </div>
-            <DropdownMenuItem onClick={handleLogout} className="text-destructive cursor-pointer">
-              <LogOut className="mr-2 h-4 w-4" />
-              Se déconnecter
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+      <div className="text-center">
+        <h1 className="text-3xl font-display font-bold text-foreground">
+          Maasser
+        </h1>
+        <p className="text-muted-foreground mt-1">
+          Donne le Maasser pour t'enrichir    
+        </p>
       </div>
 
       {/* Year Selector */}

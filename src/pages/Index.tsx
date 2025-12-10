@@ -6,6 +6,7 @@ import { AddDonationForm } from '@/components/AddDonationForm';
 import { BeneficiariesList } from '@/components/BeneficiariesList';
 import { HistoryView } from '@/components/HistoryView';
 import { AuthPage } from '@/components/AuthPage';
+import { UserMenu } from '@/components/UserMenu';
 import { useMaasser } from '@/hooks/useMaasser';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -38,8 +39,16 @@ const Index = () => {
     }
   }, [isAuthenticated, isLoading, activeTab]);
 
+  // Redirect to dashboard after successful authentication
+  useEffect(() => {
+    if (isAuthenticated && activeTab === 'auth') {
+      setActiveTab('dashboard');
+    }
+  }, [isAuthenticated, activeTab]);
+
   const handleAuthSuccess = () => {
-    setActiveTab('dashboard');
+    // The useEffect above will handle the redirect when isAuthenticated changes
+    // This callback is kept for potential future use
   };
 
   const handleTabChange = (tab: NavTab) => {
@@ -68,8 +77,6 @@ const Index = () => {
             beneficiaries={beneficiaries}
             availableYears={availableYears}
             onYearChange={setSelectedYear}
-            user={user}
-            onLogout={logout}
           />
         );
       
@@ -135,15 +142,18 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {isAuthenticated && <UserMenu user={user} onLogout={logout} />}
       <main className="max-w-lg mx-auto px-4 pt-6 pb-24">
         {renderContent()}
       </main>
       
-      <BottomNav 
-        activeTab={activeTab} 
-        onTabChange={handleTabChange}
-        isAuthenticated={isAuthenticated}
-      />
+      {isAuthenticated && (
+        <BottomNav 
+          activeTab={activeTab} 
+          onTabChange={handleTabChange}
+          isAuthenticated={isAuthenticated}
+        />
+      )}
     </div>
   );
 };
