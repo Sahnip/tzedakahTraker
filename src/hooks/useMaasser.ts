@@ -1,237 +1,311 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
+import { supabase } from '@/integrations:supubase/client';
 import { Income, Donation, Beneficiary, YearSummary, IncomeSource, BeneficiaryCategory } from '@/types/maasser';
 
-// Generate unique IDs
-const generateId = () => Math.random().toString(36).substr(2, 9);
-
-// Get storage keys based on user ID
-const getStorageKeys = (userId: string | null) => {
-  const suffix = userId ? `_${userId}` : '';
-  return {
-    INCOMES: `tzedakah_incomes${suffix}`,
-    DONATIONS: `tzedakah_donations${suffix}`,
-    BENEFICIARIES: `tzedakah_beneficiaries${suffix}`,
-  };
-};
-
-// Sample data for demo (used only if localStorage is empty)
-const SAMPLE_INCOMES: Income[] = [
-  {
-    id: '1',
-    amount: 4500,
-    source: 'salary',
-    date: new Date(2024, 0, 15),
-    description: 'Salaire janvier',
-    maasserDue: 450,
-  },
-  {
-    id: '2',
-    amount: 4500,
-    source: 'salary',
-    date: new Date(2024, 1, 15),
-    description: 'Salaire février',
-    maasserDue: 450,
-  },
-  {
-    id: '3',
-    amount: 1200,
-    source: 'freelance',
-    date: new Date(2024, 1, 20),
-    description: 'Projet web',
-    maasserDue: 120,
-  },
-  {
-    id: '4',
-    amount: 500,
-    source: 'gift',
-    date: new Date(2024, 2, 5),
-    description: 'Cadeau Pourim',
-    maasserDue: 50,
-  },
-];
-
-const SAMPLE_BENEFICIARIES: Beneficiary[] = [
-  { id: 'b1', name: 'Beth Habad', category: 'synagogue', createdAt: new Date(2023, 0, 1) },
-  { id: 'b2', name: 'Yeshiva Or Torah', category: 'yeshiva', createdAt: new Date(2023, 0, 1) },
-  { id: 'b3', name: 'Keren Hayeled', category: 'charity', createdAt: new Date(2023, 5, 1) },
-];
-
-const SAMPLE_DONATIONS: Donation[] = [
-  { id: 'd1', amount: 200, beneficiaryId: 'b1', date: new Date(2024, 0, 20), note: 'Don mensuel' },
-  { id: 'd2', amount: 150, beneficiaryId: 'b2', date: new Date(2024, 1, 10) },
-  { id: 'd3', amount: 100, beneficiaryId: 'b3', date: new Date(2024, 1, 25), note: 'Pourim' },
-];
-
-// Helper functions for localStorage
-const loadFromStorage = <T,>(key: string, defaultValue: T): T => {
-  try {
-    const item = localStorage.getItem(key);
-    if (item) {
-      const parsed = JSON.parse(item);
-      // Convert date strings back to Date objects
-      if (Array.isArray(parsed)) {
-        return parsed.map((item: any) => {
-          if (item.date) item.date = new Date(item.date);
-          if (item.createdAt) item.createdAt = new Date(item.createdAt);
-          return item;
-        }) as T;
-      }
-      return parsed;
-    }
-  } catch (error) {
-    console.error(`Error loading ${key} from localStorage:`, error);
-  }
-  return defaultValue;
-};
-
-const saveToStorage = <T,>(key: string, data: T): void => {
-  try {
-    localStorage.setItem(key, JSON.stringify(data));
-  } catch (error) {
-    console.error(`Error saving ${key} to localStorage:`, error);
-  }
-};
-
 export function useMaasser(userId: string | null = null) {
-  const storageKeys = getStorageKeys(userId);
-
-  // Load initial data from localStorage or use sample data
-  const [incomes, setIncomes] = useState<Income[]>(() => {
-    const stored = loadFromStorage<Income[]>(storageKeys.INCOMES, []);
-    return stored.length > 0 ? stored : (userId ? [] : SAMPLE_INCOMES);
-  });
-  
-  const [donations, setDonations] = useState<Donation[]>(() => {
-    const stored = loadFromStorage<Donation[]>(storageKeys.DONATIONS, []);
-    return stored.length > 0 ? stored : (userId ? [] : SAMPLE_DONATIONS);
-  });
-  
-  const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>(() => {
-    const stored = loadFromStorage<Beneficiary[]>(storageKeys.BENEFICIARIES, []);
-    return stored.length > 0 ? stored : (userId ? [] : SAMPLE_BENEFICIARIES);
-  });
-  
+  const [incomes, setIncomes] = useState<Income[]>([]);
+  const [donations, setDonations] = useState<Donation[]>([]);
+  const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([]);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Reload data when userId changes
+  // Load data from Supabase when userId changes
   useEffect(() => {
-    const keys = getStorageKeys(userId);
-    const loadedIncomes = loadFromStorage<Income[]>(keys.INCOMES, []);
-    const loadedDonations = loadFromStorage<Donation[]>(keys.DONATIONS, []);
-    const loadedBeneficiaries = loadFromStorage<Beneficiary[]>(keys.BENEFICIARIES, []);
-    
-    setIncomes(loadedIncomes.length > 0 ? loadedIncomes : (userId ? [] : SAMPLE_INCOMES));
-    setDonations(loadedDonations.length > 0 ? loadedDonations : (userId ? [] : SAMPLE_DONATIONS));
-    setBeneficiaries(loadedBeneficiaries.length > 0 ? loadedBeneficiaries : (userId ? [] : SAMPLE_BENEFICIARIES));
+    if (!userId) {
+      setIncomes([]);
+      setDonations([]);
+      setBeneficiaries([]);
+      setIsLoading(false);
+      return;
+    }
+
+    loadAllData();
   }, [userId]);
 
-  // Save to localStorage whenever data changes
-  useEffect(() => {
-    const keys = getStorageKeys(userId);
-    saveToStorage(keys.INCOMES, incomes);
-  }, [incomes, userId]);
+  const loadAllData = async () => {
+    if (!userId) return;
 
-  useEffect(() => {
-    const keys = getStorageKeys(userId);
-    saveToStorage(keys.DONATIONS, donations);
-  }, [donations, userId]);
+    setIsLoading(true);
+    try {
+      // Load beneficiaries
+      const { data: beneficiariesData, error: beneficiariesError } = await supabase
+        .from('beneficiaries')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
 
-  useEffect(() => {
-    const keys = getStorageKeys(userId);
-    saveToStorage(keys.BENEFICIARIES, beneficiaries);
-  }, [beneficiaries, userId]);
+      if (beneficiariesError) throw beneficiariesError;
+
+      const loadedBeneficiaries: Beneficiary[] = (beneficiariesData || []).map(b => ({
+        id: b.id,
+        name: b.name,
+        category: b.category as BeneficiaryCategory | undefined,
+        createdAt: new Date(b.created_at),
+      }));
+      setBeneficiaries(loadedBeneficiaries);
+
+      // Load incomes
+      const { data: incomesData, error: incomesError } = await supabase
+        .from('incomes')
+        .select('*')
+        .eq('user_id', userId)
+        .order('date', { ascending: false });
+
+      if (incomesError) throw incomesError;
+
+      const loadedIncomes: Income[] = (incomesData || []).map(i => ({
+        id: i.id,
+        amount: Number(i.amount),
+        source: i.source as IncomeSource,
+        date: new Date(i.date),
+        description: i.description || undefined,
+        maasserDue: Number(i.maasser_due),
+      }));
+      setIncomes(loadedIncomes);
+
+      // Load donations
+      const { data: donationsData, error: donationsError } = await supabase
+        .from('donations')
+        .select('*')
+        .eq('user_id', userId)
+        .order('date', { ascending: false });
+
+      if (donationsError) throw donationsError;
+
+      const loadedDonations: Donation[] = (donationsData || []).map(d => ({
+        id: d.id,
+        amount: Number(d.amount),
+        beneficiaryId: d.beneficiary_id,
+        date: new Date(d.date),
+        note: d.note || undefined,
+      }));
+      setDonations(loadedDonations);
+    } catch (error) {
+      console.error('Error loading data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Add income
-  const addIncome = useCallback((
+  const addIncome = useCallback(async (
     amount: number,
     source: IncomeSource,
     date: Date,
     description?: string
   ) => {
-    const newIncome: Income = {
-      id: generateId(),
+    if (!userId) return null;
+
+    const maasserDue = amount * 0.1;
+    const newIncome = {
+      user_id: userId,
       amount,
       source,
-      date,
-      description,
-      maasserDue: amount * 0.1,
+      date: date.toISOString().split('T')[0],
+      description: description || null,
+      maasser_due: maasserDue,
     };
-    setIncomes(prev => [newIncome, ...prev]);
-    return newIncome;
-  }, []);
+
+    const { data, error } = await supabase
+      .from('incomes')
+      .insert(newIncome)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error adding income:', error);
+      return null;
+    }
+
+    const income: Income = {
+      id: data.id,
+      amount: Number(data.amount),
+      source: data.source as IncomeSource,
+      date: new Date(data.date),
+      description: data.description || undefined,
+      maasserDue: Number(data.maasser_due),
+    };
+
+    setIncomes(prev => [income, ...prev]);
+    return income;
+  }, [userId]);
 
   // Add donation
-  const addDonation = useCallback((
+  const addDonation = useCallback(async (
     amount: number,
     beneficiaryId: string,
     date: Date,
     note?: string
   ) => {
-    const newDonation: Donation = {
-      id: generateId(),
+    if (!userId) return null;
+
+    const newDonation = {
+      user_id: userId,
       amount,
-      beneficiaryId,
-      date,
-      note,
+      beneficiary_id: beneficiaryId,
+      date: date.toISOString().split('T')[0],
+      note: note || null,
     };
-    setDonations(prev => [newDonation, ...prev]);
-    return newDonation;
-  }, []);
+
+    const { data, error } = await supabase
+      .from('donations')
+      .insert(newDonation)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error adding donation:', error);
+      return null;
+    }
+
+    const donation: Donation = {
+      id: data.id,
+      amount: Number(data.amount),
+      beneficiaryId: data.beneficiary_id,
+      date: new Date(data.date),
+      note: data.note || undefined,
+    };
+
+    setDonations(prev => [donation, ...prev]);
+    return donation;
+  }, [userId]);
 
   // Update income
-  const updateIncome = useCallback((
+  const updateIncome = useCallback(async (
     id: string,
     amount: number,
     source: IncomeSource,
     date: Date,
     description?: string
   ) => {
+    if (!userId) return;
+
+    const maasserDue = amount * 0.1;
+    const { error } = await supabase
+      .from('incomes')
+      .update({
+        amount,
+        source,
+        date: date.toISOString().split('T')[0],
+        description: description || null,
+        maasser_due: maasserDue,
+      })
+      .eq('id', id)
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('Error updating income:', error);
+      return;
+    }
+
     setIncomes(prev => prev.map(income => 
       income.id === id 
-        ? { ...income, amount, source, date, description, maasserDue: amount * 0.1 }
+        ? { ...income, amount, source, date, description, maasserDue }
         : income
     ));
-  }, []);
+  }, [userId]);
 
   // Delete income
-  const deleteIncome = useCallback((id: string) => {
+  const deleteIncome = useCallback(async (id: string) => {
+    if (!userId) return;
+
+    const { error } = await supabase
+      .from('incomes')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('Error deleting income:', error);
+      return;
+    }
+
     setIncomes(prev => prev.filter(income => income.id !== id));
-  }, []);
+  }, [userId]);
 
   // Update donation
-  const updateDonation = useCallback((
+  const updateDonation = useCallback(async (
     id: string,
     amount: number,
     beneficiaryId: string,
     date: Date,
     note?: string
   ) => {
+    if (!userId) return;
+
+    const { error } = await supabase
+      .from('donations')
+      .update({
+        amount,
+        beneficiary_id: beneficiaryId,
+        date: date.toISOString().split('T')[0],
+        note: note || null,
+      })
+      .eq('id', id)
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('Error updating donation:', error);
+      return;
+    }
+
     setDonations(prev => prev.map(donation => 
       donation.id === id 
         ? { ...donation, amount, beneficiaryId, date, note }
         : donation
     ));
-  }, []);
+  }, [userId]);
 
   // Delete donation
-  const deleteDonation = useCallback((id: string) => {
+  const deleteDonation = useCallback(async (id: string) => {
+    if (!userId) return;
+
+    const { error } = await supabase
+      .from('donations')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('Error deleting donation:', error);
+      return;
+    }
+
     setDonations(prev => prev.filter(donation => donation.id !== id));
-  }, []);
+  }, [userId]);
 
   // Add beneficiary
-  const addBeneficiary = useCallback((
+  const addBeneficiary = useCallback(async (
     name: string,
     category?: BeneficiaryCategory
   ) => {
-    const newBeneficiary: Beneficiary = {
-      id: generateId(),
-      name,
-      category,
-      createdAt: new Date(),
+    if (!userId) return null;
+
+    const { data, error } = await supabase
+      .from('beneficiaries')
+      .insert({
+        user_id: userId,
+        name,
+        category: category || null,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error adding beneficiary:', error);
+      return null;
+    }
+
+    const beneficiary: Beneficiary = {
+      id: data.id,
+      name: data.name,
+      category: data.category as BeneficiaryCategory | undefined,
+      createdAt: new Date(data.created_at),
     };
-    setBeneficiaries(prev => [newBeneficiary, ...prev]);
-    return newBeneficiary;
-  }, []);
+
+    setBeneficiaries(prev => [beneficiary, ...prev]);
+    return beneficiary;
+  }, [userId]);
 
   // Get year summary
   const yearSummary = useMemo((): YearSummary => {
@@ -298,5 +372,6 @@ export function useMaasser(userId: string | null = null) {
     recentActivity,
     getBeneficiary,
     availableYears,
+    isLoading,
   };
 }

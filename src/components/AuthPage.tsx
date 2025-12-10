@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import * as React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +18,14 @@ export function AuthPage({ onAuthSuccess }: AuthPageProps) {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login, register } = useAuth();
+  const { login, register, isAuthenticated } = useAuth();
+
+  // Redirect when authenticated
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      onAuthSuccess?.();
+    }
+  }, [isAuthenticated, onAuthSuccess]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,16 +36,20 @@ export function AuthPage({ onAuthSuccess }: AuthPageProps) {
     }
 
     setIsLoading(true);
-    const user = login(email, password);
-    setIsLoading(false);
-
-    if (user) {
-      toast.success('Connexion réussie !', {
-        description: `Bienvenue ${user.name || user.email}`,
-      });
-      onAuthSuccess?.();
-    } else {
-      toast.error('Email ou mot de passe incorrect');
+    try {
+      const user = await login(email, password);
+      if (user) {
+        toast.success('Connexion réussie !', {
+          description: `Bienvenue ${user.name || user.email}`,
+        });
+        // The useEffect will handle the redirect
+      } else {
+        toast.error('Email ou mot de passe incorrect');
+      }
+    } catch (error) {
+      toast.error('Une erreur est survenue lors de la connexion');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -49,22 +61,26 @@ export function AuthPage({ onAuthSuccess }: AuthPageProps) {
       return;
     }
 
-    if (password.length < 4) {
-      toast.error('Le mot de passe doit contenir au moins 4 caractères');
+    if (password.length < 6) {
+      toast.error('Le mot de passe doit contenir au moins 6 caractères');
       return;
     }
 
     setIsLoading(true);
-    const user = register(email, password, name || undefined);
-    setIsLoading(false);
-
-    if (user) {
-      toast.success('Compte créé avec succès !', {
-        description: `Bienvenue ${user.name || user.email}`,
-      });
-      onAuthSuccess?.();
-    } else {
-      toast.error('Cet email est déjà utilisé');
+    try {
+      const user = await register(email, password, name || undefined);
+      if (user) {
+        toast.success('Compte créé avec succès !', {
+          description: `Bienvenue ${user.name || user.email}`,
+        });
+        // The useEffect will handle the redirect
+      } else {
+        toast.error('Cet email est déjà utilisé ou une erreur est survenue');
+      }
+    } catch (error) {
+      toast.error('Une erreur est survenue lors de la création du compte');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -171,12 +187,12 @@ export function AuthPage({ onAuthSuccess }: AuthPageProps) {
                   <Input
                     id="register-password"
                     type="password"
-                    placeholder="Au moins 4 caractères"
+                    placeholder="Au moins 6 caractères"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={isLoading}
                     required
-                    minLength={4}
+                    minLength={6}
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
@@ -187,12 +203,6 @@ export function AuthPage({ onAuthSuccess }: AuthPageProps) {
             </TabsContent>
           </Tabs>
 
-          <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-            <p className="text-xs text-muted-foreground text-center">
-              💡 <strong>Compte test :</strong> Créez un compte pour commencer. 
-              Les données seront sauvegardées localement sur votre appareil.
-            </p>
-          </div>
         </CardContent>
       </Card>
     </div>
