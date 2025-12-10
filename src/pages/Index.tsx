@@ -135,7 +135,12 @@ const Index = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-muted-foreground">Chargement...</div>
+        <div className="text-center space-y-2">
+          <div className="text-muted-foreground">Chargement...</div>
+          <div className="text-xs text-muted-foreground/70">
+            Vérification de la session...
+          </div>
+        </div>
       </div>
     );
   }

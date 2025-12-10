@@ -15,19 +15,38 @@ export function useAuth() {
 
   // Load user session on mount
   useEffect(() => {
+    let mounted = true;
+
     // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        loadUserProfile(session.user.id);
-      } else {
-        setIsLoading(false);
-      }
-    });
+    supabase.auth.getSession()
+      .then(({ data: { session }, error }) => {
+        if (!mounted) return;
+        
+        if (error) {
+          console.error('Error getting session:', error);
+          setIsLoading(false);
+          return;
+        }
+
+        if (session?.user) {
+          loadUserProfile(session.user.id);
+        } else {
+          setIsLoading(false);
+        }
+      })
+      .catch((error) => {
+        console.error('Error in getSession:', error);
+        if (mounted) {
+          setIsLoading(false);
+        }
+      });
 
     // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
+
       if (session?.user) {
         await loadUserProfile(session.user.id);
       } else {
@@ -37,6 +56,7 @@ export function useAuth() {
     });
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, []);
@@ -49,9 +69,24 @@ export function useAuth() {
         .eq('id', userId)
         .single();
 
-      if (error) throw error;
-
-      if (profile) {
+      if (error) {
+        // If table doesn't exist or profile not found, try to get user from auth
+        if (error.code === 'PGRST116' || error.code === '42P01') {
+          console.warn('Table profiles not found. Please run the SQL schema in Supabase.');
+          // Fallback: use auth user data
+          const { data: { user: authUser } } = await supabase.auth.getUser();
+          if (authUser) {
+            setUser({
+              id: authUser.id,
+              email: authUser.email || '',
+              name: authUser.user_metadata?.name || undefined,
+              createdAt: new Date(authUser.created_at),
+            });
+          }
+        } else {
+          throw error;
+        }
+      } else if (profile) {
         setUser({
           id: profile.id,
           email: profile.email,
@@ -59,8 +94,22 @@ export function useAuth() {
           createdAt: new Date(profile.created_at),
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading user profile:', error);
+      // Fallback: try to get user from auth
+      try {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (authUser) {
+          setUser({
+            id: authUser.id,
+            email: authUser.email || '',
+            name: authUser.user_metadata?.name || undefined,
+            createdAt: new Date(authUser.created_at),
+          });
+        }
+      } catch (fallbackError) {
+        console.error('Fallback error:', fallbackError);
+      }
     } finally {
       setIsLoading(false);
     }
