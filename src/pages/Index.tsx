@@ -1,13 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BottomNav, NavTab } from '@/components/BottomNav';
 import { Dashboard } from '@/components/Dashboard';
 import { AddIncomeForm } from '@/components/AddIncomeForm';
 import { AddDonationForm } from '@/components/AddDonationForm';
 import { BeneficiariesList } from '@/components/BeneficiariesList';
 import { HistoryView } from '@/components/HistoryView';
+import { AuthPage } from '@/components/AuthPage';
 import { useMaasser } from '@/hooks/useMaasser';
+import { useAuth } from '@/hooks/useAuth';
 
 const Index = () => {
+  const { user, isAuthenticated, isLoading, logout, getUserId } = useAuth();
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
   
   const {
@@ -26,14 +29,37 @@ const Index = () => {
     yearSummary,
     recentActivity,
     availableYears,
-  } = useMaasser();
+  } = useMaasser(getUserId());
+
+  // Redirect to auth if not authenticated and trying to access other tabs
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated && activeTab !== 'auth') {
+      setActiveTab('auth');
+    }
+  }, [isAuthenticated, isLoading, activeTab]);
+
+  const handleAuthSuccess = () => {
+    setActiveTab('dashboard');
+  };
 
   const handleTabChange = (tab: NavTab) => {
+    if (!isAuthenticated && tab !== 'auth') {
+      setActiveTab('auth');
+      return;
+    }
     setActiveTab(tab);
   };
 
   const renderContent = () => {
+    // Show auth page if not authenticated
+    if (!isAuthenticated) {
+      return <AuthPage onAuthSuccess={handleAuthSuccess} />;
+    }
+
     switch (activeTab) {
+      case 'auth':
+        return <AuthPage onAuthSuccess={handleAuthSuccess} />;
+      
       case 'dashboard':
         return (
           <Dashboard
@@ -42,6 +68,8 @@ const Index = () => {
             beneficiaries={beneficiaries}
             availableYears={availableYears}
             onYearChange={setSelectedYear}
+            user={user}
+            onLogout={logout}
           />
         );
       
@@ -97,13 +125,25 @@ const Index = () => {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-muted-foreground">Chargement...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <main className="max-w-lg mx-auto px-4 pt-6 pb-24">
         {renderContent()}
       </main>
       
-      <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
+      <BottomNav 
+        activeTab={activeTab} 
+        onTabChange={handleTabChange}
+        isAuthenticated={isAuthenticated}
+      />
     </div>
   );
 };

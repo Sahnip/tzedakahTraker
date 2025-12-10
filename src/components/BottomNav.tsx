@@ -1,11 +1,12 @@
 import { cn } from '@/lib/utils';
-import { Home, PlusCircle, Heart, Users, History } from 'lucide-react';
+import { Home, PlusCircle, Heart, Users, History, LogIn } from 'lucide-react';
 
-export type NavTab = 'dashboard' | 'add-income' | 'add-donation' | 'beneficiaries' | 'history';
+export type NavTab = 'dashboard' | 'add-income' | 'add-donation' | 'beneficiaries' | 'history' | 'auth';
 
 interface BottomNavProps {
   activeTab: NavTab;
   onTabChange: (tab: NavTab) => void;
+  isAuthenticated: boolean;
 }
 
 const navItems: { id: NavTab; label: string; icon: typeof Home }[] = [
@@ -16,11 +17,19 @@ const navItems: { id: NavTab; label: string; icon: typeof Home }[] = [
   { id: 'history', label: 'Historique', icon: History },
 ];
 
-export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
+const authNavItem = { id: 'auth' as NavTab, label: 'Connexion', icon: LogIn };
+
+export function BottomNav({ activeTab, onTabChange, isAuthenticated }: BottomNavProps) {
+  // Show auth tab in place of the last item if not authenticated
+  // This ensures the auth tab appears on the right side
+  const itemsToShow = isAuthenticated 
+    ? navItems 
+    : [...navItems.slice(0, -1), authNavItem];
+  
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-lg border-t border-border safe-area-pb">
       <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-2">
-        {navItems.map((item) => {
+        {itemsToShow.map((item) => {
           const isActive = activeTab === item.id;
           const Icon = item.icon;
           

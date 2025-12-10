@@ -4,11 +4,14 @@ import { Income, Donation, Beneficiary, YearSummary, IncomeSource, BeneficiaryCa
 // Generate unique IDs
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
-// LocalStorage keys
-const STORAGE_KEYS = {
-  INCOMES: 'tzedakah_incomes',
-  DONATIONS: 'tzedakah_donations',
-  BENEFICIARIES: 'tzedakah_beneficiaries',
+// Get storage keys based on user ID
+const getStorageKeys = (userId: string | null) => {
+  const suffix = userId ? `_${userId}` : '';
+  return {
+    INCOMES: `tzedakah_incomes${suffix}`,
+    DONATIONS: `tzedakah_donations${suffix}`,
+    BENEFICIARIES: `tzedakah_beneficiaries${suffix}`,
+  };
 };
 
 // Sample data for demo (used only if localStorage is empty)
@@ -89,37 +92,54 @@ const saveToStorage = <T,>(key: string, data: T): void => {
   }
 };
 
-export function useMaasser() {
+export function useMaasser(userId: string | null = null) {
+  const storageKeys = getStorageKeys(userId);
+
   // Load initial data from localStorage or use sample data
   const [incomes, setIncomes] = useState<Income[]>(() => {
-    const stored = loadFromStorage<Income[]>(STORAGE_KEYS.INCOMES, []);
-    return stored.length > 0 ? stored : SAMPLE_INCOMES;
+    const stored = loadFromStorage<Income[]>(storageKeys.INCOMES, []);
+    return stored.length > 0 ? stored : (userId ? [] : SAMPLE_INCOMES);
   });
   
   const [donations, setDonations] = useState<Donation[]>(() => {
-    const stored = loadFromStorage<Donation[]>(STORAGE_KEYS.DONATIONS, []);
-    return stored.length > 0 ? stored : SAMPLE_DONATIONS;
+    const stored = loadFromStorage<Donation[]>(storageKeys.DONATIONS, []);
+    return stored.length > 0 ? stored : (userId ? [] : SAMPLE_DONATIONS);
   });
   
   const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>(() => {
-    const stored = loadFromStorage<Beneficiary[]>(STORAGE_KEYS.BENEFICIARIES, []);
-    return stored.length > 0 ? stored : SAMPLE_BENEFICIARIES;
+    const stored = loadFromStorage<Beneficiary[]>(storageKeys.BENEFICIARIES, []);
+    return stored.length > 0 ? stored : (userId ? [] : SAMPLE_BENEFICIARIES);
   });
   
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
 
+  // Reload data when userId changes
+  useEffect(() => {
+    const keys = getStorageKeys(userId);
+    const loadedIncomes = loadFromStorage<Income[]>(keys.INCOMES, []);
+    const loadedDonations = loadFromStorage<Donation[]>(keys.DONATIONS, []);
+    const loadedBeneficiaries = loadFromStorage<Beneficiary[]>(keys.BENEFICIARIES, []);
+    
+    setIncomes(loadedIncomes.length > 0 ? loadedIncomes : (userId ? [] : SAMPLE_INCOMES));
+    setDonations(loadedDonations.length > 0 ? loadedDonations : (userId ? [] : SAMPLE_DONATIONS));
+    setBeneficiaries(loadedBeneficiaries.length > 0 ? loadedBeneficiaries : (userId ? [] : SAMPLE_BENEFICIARIES));
+  }, [userId]);
+
   // Save to localStorage whenever data changes
   useEffect(() => {
-    saveToStorage(STORAGE_KEYS.INCOMES, incomes);
-  }, [incomes]);
+    const keys = getStorageKeys(userId);
+    saveToStorage(keys.INCOMES, incomes);
+  }, [incomes, userId]);
 
   useEffect(() => {
-    saveToStorage(STORAGE_KEYS.DONATIONS, donations);
-  }, [donations]);
+    const keys = getStorageKeys(userId);
+    saveToStorage(keys.DONATIONS, donations);
+  }, [donations, userId]);
 
   useEffect(() => {
-    saveToStorage(STORAGE_KEYS.BENEFICIARIES, beneficiaries);
-  }, [beneficiaries]);
+    const keys = getStorageKeys(userId);
+    saveToStorage(keys.BENEFICIARIES, beneficiaries);
+  }, [beneficiaries, userId]);
 
   // Add income
   const addIncome = useCallback((
