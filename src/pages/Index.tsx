@@ -165,18 +165,27 @@ const Index = () => {
       {/* layout principal : centre + padding responsive */}
       <main className="max-w-lg mx-auto px-6 sm:px-8 lg:px-10 pb-24">
         {/* En-tête image + titre (image responsive, border radius, shadow léger) */}
-        <header className="w-full mx-auto mb-4">
-          <div className="mx-auto rounded-xl overflow-hidden bg-gray-50 border border-gray-100 shadow-sm max-w-full">
-            <img
-              src={rebbeBack}
-              alt="Rebbe"
-              className="w-full h-40 sm:h-56 md:h-64 object-cover"
-            />
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-semibold text-foreground text-center mt-3">
-            Maasser
-          </h1>
-        </header>
+        {/* Afficher l'image uniquement sur l'onglet "dashboard" (Accueil) */}
+        {isAuthenticated && 
+          <header className="w-full mx-auto mb-4 mt-9">
+            
+         </header>
+       }
+       {isAuthenticated && activeTab === "dashboard" && (
+         <header className="w-full mx-auto mb-4 mt-9">
+            <div
+              className="w-full mx-auto max-w-full rounded-xl overflow-hidden bg-gray-50 border border-gray-100 shadow-sm"
+              style={{ height: 'clamp(8rem, 20vh, 13rem)' }}
+            >
+              <img
+                src={rebbeBack}
+                alt="Rebbe"
+                className="w-full h-full object-cover"
+                draggable={false}
+              />
+            </div>
+          </header>
+        )}
 
         {/* zone scrollable : contenu principal. pb-24 garantit un espace en bas visible */}
         <div
