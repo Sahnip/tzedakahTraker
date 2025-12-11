@@ -91,6 +91,13 @@ export function AuthPage({ onAuthSuccess }: AuthPageProps) {
           <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-2">
             <span className="text-3xl">🙏</span>
           </div>
+          <div className="mx-auto w-24 h-24 rounded-xl overflow-hidden mb-2 bg-primary/10 flex items-center justify-center">
++            <img
++              src="/phone-rebbe-back.png"
++              alt="Rebbe"
++              className="w-full h-full object-cover"
++            />
++          </div>
           <CardTitle className="text-2xl">Give Maasser</CardTitle>
           <CardDescription>
             Gérez vos dons et votre maasser
