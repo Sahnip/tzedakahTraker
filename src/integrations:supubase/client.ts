@@ -16,7 +16,7 @@ if (import.meta.env.DEV) {
 if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
   console.error('❌ Variables d\'environnement Supabase manquantes !');
   console.error('Vérifiez que votre fichier .env contient :');
-  console.error('VITE_SUPABASE_URL=https://hxihjvqvmujobqkfcdll.supabase.co');
+  console.error('VITE_SUPABASE_URL=');
   console.error('VITE_SUPABASE_PUBLISHABLE_KEY=votre-clé-publique');
   console.error('\nCes valeurs se trouvent dans : Supabase Dashboard → Settings → API');
   console.error('\n💡 IMPORTANT: Redémarrez le serveur après avoir modifié le fichier .env !');
