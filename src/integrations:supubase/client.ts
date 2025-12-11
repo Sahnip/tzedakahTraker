@@ -16,7 +16,7 @@ if (import.meta.env.DEV) {
 if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
   console.error('❌ Variables d\'environnement Supabase manquantes !');
   console.error('Vérifiez que votre fichier .env contient :');
-  console.error('VITE_SUPABASE_URL=https://votre-projet.supabase.co');
+  console.error('VITE_SUPABASE_URL=https://hxihjvqvmujobqkfcdll.supabase.co');
   console.error('VITE_SUPABASE_PUBLISHABLE_KEY=votre-clé-publique');
   console.error('\nCes valeurs se trouvent dans : Supabase Dashboard → Settings → API');
   console.error('\n💡 IMPORTANT: Redémarrez le serveur après avoir modifié le fichier .env !');
@@ -27,8 +27,8 @@ if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
 // import { supabase } from "@/integrations/supabase/client";
 
 export const supabase = createClient<Database>(
-  SUPABASE_URL || 'https://placeholder.supabase.co',
-  SUPABASE_PUBLISHABLE_KEY || 'placeholder-key',
+  SUPABASE_URL || 'https://hxihjvqvmujobqkfcdll.supabase.co',
+  SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_jVEWVSsGuN0xRCZyyExJ1A_4iDQJ6f0',
   {
     auth: {
       storage: localStorage,
