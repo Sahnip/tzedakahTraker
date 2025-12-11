@@ -1,244 +1,120 @@
-import { useState, useCallback, useEffect } from 'react';
-import { supabase } from '@/integrations:supubase/client';
-import type { User as SupabaseUser } from '@supabase/supabase-js';
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { supabase } from "@/integrations:supubase/client";
 
 export interface User {
   id: string;
   email: string;
-  name?: string;
-  createdAt: Date;
+  name?: string | null;
+  createdAt?: string;
 }
 
-export function useAuth() {
+type AuthContextValue = {
+  user: User | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  login: (email: string, password: string) => Promise<any>;
+  register: (email: string, password: string, name?: string) => Promise<any>;
+  logout: () => Promise<void>;
+  getUserId: () => string | null;
+};
+
+const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
-  // Load user session on mount
-  // useEffect(() => {
-  //   let mounted = true;
-
-  //   // Check for existing session
-  //   supabase.auth.getSession()
-  //     .then(({ data: { session }, error }) => {
-  //       if (!mounted) return;
-        
-  //       if (error) {
-  //         console.error('Error getting session:', error);
-  //         setIsLoading(false);
-  //         return;
-  //       }
-
-  //       if (session?.user) {
-  //         loadUserProfile(session.user.id);
-  //       } else {
-  //         setIsLoading(false);
-  //       }
-  //     })
-  //     .catch((error) => {
-  //       console.error('Error in getSession:', error);
-  //       if (mounted) {
-  //         setIsLoading(false);
-  //       }
-  //     });
-
-  //   // Listen for auth changes
-  //   const {
-  //     data: { subscription },
-  //   } = supabase.auth.onAuthStateChange(async (event, session) => {
-  //     if (!mounted) return;
-
-  //     if (session?.user) {
-  //       await loadUserProfile(session.user.id);
-  //     } else {
-  //       setUser(null);
-  //       setIsLoading(false);
-  //     }
-  //   });
-
-  //   return () => {
-  //     mounted = false;
-  //     subscription.unsubscribe();
-  //   };
-  // }, []);
   useEffect(() => {
-  let mounted = true;
+    let mounted = true;
 
-  const initializeAuth = async () => {
-    try {
-      // Récupère la session existante (depuis localStorage)
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (mounted) {
-        setUser(session?.user ?? null);
-        setIsAuthenticated(!!session);
-        setIsLoading(false);  // 🔑 CRUCIAL : doit être appelé une seule fois
-      }
-    } catch (error) {
-      console.error('Auth init error:', error);
-      if (mounted) setIsLoading(false);
-    }
-  };
-
-  initializeAuth();
-
-  // Listener pour les changements de session (logout, token refresh, etc.)
-  const { data: { subscription } } = supabase.auth.onAuthStateChange(
-    async (event, session) => {
-      if (mounted) {
-        setUser(session?.user ?? null);
-        setIsAuthenticated(!!session);
-        // NE PAS relancer setIsLoading(true) à moins d'une reconnexion explicite
-      }
-    }
-  );
-
-  return () => {
-    mounted = false;
-    subscription?.unsubscribe();
-  };
-}, []); 
-
-  const loadUserProfile = async (userId: string) => {
-    try {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error) {
-        // If table doesn't exist or profile not found, try to get user from auth
-        if (error.code === 'PGRST116' || error.code === '42P01') {
-          console.warn('Table profiles not found. Please run the SQL schema in Supabase.');
-          // Fallback: use auth user data
-          const { data: { user: authUser } } = await supabase.auth.getUser();
-          if (authUser) {
-            setUser({
-              id: authUser.id,
-              email: authUser.email || '',
-              name: authUser.user_metadata?.name || undefined,
-              createdAt: new Date(authUser.created_at),
-            });
-          }
-        } else {
-          throw error;
-        }
-      } else if (profile) {
-        setUser({
-          id: profile.id,
-          email: profile.email,
-          name: profile.name || undefined,
-          createdAt: new Date(profile.created_at),
-        });
-      }
-    } catch (error: any) {
-      console.error('Error loading user profile:', error);
-      // Fallback: try to get user from auth
+    const init = async () => {
       try {
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-        if (authUser) {
+        const { data } = await supabase.auth.getSession();
+        const session = (data as any)?.session ?? null;
+        if (!mounted) return;
+
+        if (session?.user) {
           setUser({
-            id: authUser.id,
-            email: authUser.email || '',
-            name: authUser.user_metadata?.name || undefined,
-            createdAt: new Date(authUser.created_at),
+            id: session.user.id,
+            email: session.user.email ?? "",
+            name: (session.user.user_metadata as any)?.name ?? null,
+            createdAt: session.user.created_at ?? undefined,
           });
+          setIsAuthenticated(true);
+        } else {
+          setUser(null);
+          setIsAuthenticated(false);
         }
-      } catch (fallbackError) {
-        console.error('Fallback error:', fallbackError);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Register new user
-  const register = useCallback(async (email: string, password: string, name?: string): Promise<User | null> => {
-    try {
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            name: name || null,
-          },
-        },
-      });
-
-      if (authError) throw authError;
-
-      if (authData.user) {
-        // Profile is created automatically by trigger, but we can update it with name
-        if (name) {
-          await supabase
-            .from('profiles')
-            .update({ name })
-            .eq('id', authData.user.id);
+      } catch (err) {
+        console.error("Auth init error:", err);
+        if (mounted) {
+          setUser(null);
+          setIsAuthenticated(false);
         }
-
-        // Load the profile
-        await loadUserProfile(authData.user.id);
-
-        return {
-          id: authData.user.id,
-          email: authData.user.email!,
-          name: name || undefined,
-          createdAt: new Date(authData.user.created_at),
-        };
+      } finally {
+        if (mounted) setIsLoading(false);
       }
+    };
 
-      return null;
-    } catch (error: any) {
-      console.error('Registration error:', error);
-      return null;
-    }
+    init();
+
+    // subscribe to auth changes
+    const { subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return;
+      if (session?.user) {
+        setUser({
+          id: session.user.id,
+          email: session.user.email ?? "",
+          name: (session.user.user_metadata as any)?.name ?? null,
+          createdAt: session.user.created_at ?? undefined,
+        });
+        setIsAuthenticated(true);
+      } else {
+        setUser(null);
+        setIsAuthenticated(false);
+      }
+    });
+
+    return () => {
+      mounted = false;
+      subscription?.unsubscribe();
+    };
   }, []);
 
-  // Login
-  const login = useCallback(async (email: string, password: string): Promise<User | null> => {
-    try {
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (authError) throw authError;
-
-      if (authData.user) {
-        await loadUserProfile(authData.user.id);
-        return {
-          id: authData.user.id,
-          email: authData.user.email!,
-          name: undefined, // Will be loaded from profile
-          createdAt: new Date(authData.user.created_at),
-        };
-      }
-
-      return null;
-    } catch (error: any) {
-      console.error('Login error:', error);
-      return null;
-    }
+  const login = useCallback(async (email: string, password: string) => {
+    const result = await supabase.auth.signInWithPassword({ email, password });
+    if (result.error) throw result.error;
+    return result.data;
   }, []);
 
-  // Logout
+  const register = useCallback(async (email: string, password: string, name?: string) => {
+    const result = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { name } },
+    });
+    if (result.error) throw result.error;
+    return result.data.user ?? result.data;
+  }, []);
+
   const logout = useCallback(async () => {
     await supabase.auth.signOut();
     setUser(null);
+    setIsAuthenticated(false);
   }, []);
 
-  // Get user ID for storage keys
-  const getUserId = useCallback((): string | null => {
-    return user?.id || null;
-  }, [user]);
+  const getUserId = useCallback((): string | null => user?.id ?? null, [user]);
 
-  return {
-    user,
-    isLoading,
-    isAuthenticated: !!user,
-    register,
-    login,
-    logout,
-    getUserId,
-  };
-}
+  return (
+    <AuthContext.Provider value={{ user, isAuthenticated, isLoading, login, register, logout, getUserId }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = (): AuthContextValue => {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  return ctx;
+};
