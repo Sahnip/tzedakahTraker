@@ -31,9 +31,11 @@ export const supabase = createClient<Database>(
   SUPABASE_PUBLISHABLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4aWhqdnF2bXVqb2Jxa2ZjZGxsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzOTAxMzcsImV4cCI6MjA4MDk2NjEzN30.dtTJtQFXSpXs9ewczmVfD760FdMVb53XOjdmVr4Z0KU',
   {
     auth: {
-      storage: localStorage,
-      persistSession: true,
-      autoRefreshToken: true,
+      storage: typeof window !== 'undefined' ? localStorage : undefined,
+      persistSession: true,                    // ✅ important : persist la session localement
+      autoRefreshToken: true,                  // ✅ important : renouvelle le token auto avant expiration
+      detectSessionInUrl: true,                // ✅ captures callback URLs (OAuth)
+      flowType: 'pkce',                        // ✅ recommandé pour SPA (plus sûr que implicit)
     }
   }
 );

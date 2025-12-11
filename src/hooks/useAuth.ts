@@ -14,52 +14,89 @@ export function useAuth() {
   const [isLoading, setIsLoading] = useState(true);
 
   // Load user session on mount
-  useEffect(() => {
-    let mounted = true;
+  // useEffect(() => {
+  //   let mounted = true;
 
-    // Check for existing session
-    supabase.auth.getSession()
-      .then(({ data: { session }, error }) => {
-        if (!mounted) return;
+  //   // Check for existing session
+  //   supabase.auth.getSession()
+  //     .then(({ data: { session }, error }) => {
+  //       if (!mounted) return;
         
-        if (error) {
-          console.error('Error getting session:', error);
-          setIsLoading(false);
-          return;
-        }
+  //       if (error) {
+  //         console.error('Error getting session:', error);
+  //         setIsLoading(false);
+  //         return;
+  //       }
 
-        if (session?.user) {
-          loadUserProfile(session.user.id);
-        } else {
-          setIsLoading(false);
-        }
-      })
-      .catch((error) => {
-        console.error('Error in getSession:', error);
-        if (mounted) {
-          setIsLoading(false);
-        }
-      });
+  //       if (session?.user) {
+  //         loadUserProfile(session.user.id);
+  //       } else {
+  //         setIsLoading(false);
+  //       }
+  //     })
+  //     .catch((error) => {
+  //       console.error('Error in getSession:', error);
+  //       if (mounted) {
+  //         setIsLoading(false);
+  //       }
+  //     });
 
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!mounted) return;
+  //   // Listen for auth changes
+  //   const {
+  //     data: { subscription },
+  //   } = supabase.auth.onAuthStateChange(async (event, session) => {
+  //     if (!mounted) return;
 
-      if (session?.user) {
-        await loadUserProfile(session.user.id);
-      } else {
-        setUser(null);
-        setIsLoading(false);
+  //     if (session?.user) {
+  //       await loadUserProfile(session.user.id);
+  //     } else {
+  //       setUser(null);
+  //       setIsLoading(false);
+  //     }
+  //   });
+
+  //   return () => {
+  //     mounted = false;
+  //     subscription.unsubscribe();
+  //   };
+  // }, []);
+  useEffect(() => {
+  let mounted = true;
+
+  const initializeAuth = async () => {
+    try {
+      // Récupère la session existante (depuis localStorage)
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (mounted) {
+        setUser(session?.user ?? null);
+        setIsAuthenticated(!!session);
+        setIsLoading(false);  // 🔑 CRUCIAL : doit être appelé une seule fois
       }
-    });
+    } catch (error) {
+      console.error('Auth init error:', error);
+      if (mounted) setIsLoading(false);
+    }
+  };
 
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, []);
+  initializeAuth();
+
+  // Listener pour les changements de session (logout, token refresh, etc.)
+  const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    async (event, session) => {
+      if (mounted) {
+        setUser(session?.user ?? null);
+        setIsAuthenticated(!!session);
+        // NE PAS relancer setIsLoading(true) à moins d'une reconnexion explicite
+      }
+    }
+  );
+
+  return () => {
+    mounted = false;
+    subscription?.unsubscribe();
+  };
+}, []); 
 
   const loadUserProfile = async (userId: string) => {
     try {
