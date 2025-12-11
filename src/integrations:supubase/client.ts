@@ -25,20 +25,3 @@ if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
-
-export const supabase = createClient<Database>(
-  SUPABASE_URL || 'https://hxihjvqvmujobqkfcdll.supabase.co',
-  SUPABASE_PUBLISHABLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4aWhqdnF2bXVqb2Jxa2ZjZGxsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzOTAxMzcsImV4cCI6MjA4MDk2NjEzN30.dtTJtQFXSpXs9ewczmVfD760FdMVb53XOjdmVr4Z0KU',
-  {
-    auth: {
-      storage: localStorage,
-      persistSession: true,
-      autoRefreshToken: true,
-    }
-  }
-);
-
-// Expose supabase globally for debugging (only in development)
-if (import.meta.env.DEV && typeof window !== 'undefined') {
-  (window as any).supabase = supabase;
-}
