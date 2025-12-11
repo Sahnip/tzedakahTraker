@@ -93,7 +93,7 @@ export function AuthPage({ onAuthSuccess }: AuthPageProps) {
           </div>
           <div className="mx-auto w-24 h-24 rounded-xl overflow-hidden mb-2 bg-primary/10 flex items-center justify-center">
             <img
-              src="/phone-rebbe-back.png"
+              src="../public/rebbe-back.png"
               alt="Rebbe"
               className="w-full h-full object-cover"
             />
