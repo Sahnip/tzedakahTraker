@@ -29,7 +29,7 @@ export function AuthPage({ onAuthSuccess }: AuthPageProps) {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email || !password) {
       toast.error('Veuillez remplir tous les champs');
       return;
@@ -37,16 +37,25 @@ export function AuthPage({ onAuthSuccess }: AuthPageProps) {
 
     setIsLoading(true);
     try {
-      const user = await login(email, password);
-      if (user) {
-        toast.success('Connexion réussie !', {
-          description: `Bienvenue ${user.name || user.email}`,
-        });
-        // The useEffect will handle the redirect
+      // Log debug
+      console.debug('Attempt login', { email });
+
+      // call login from your hook
+      const result = await login(email, password);
+      console.debug('login result', result);
+
+      // If login returns object with error/ data:
+      if ((result as any)?.error) {
+        console.error('Supabase login error:', (result as any).error);
+        toast.error(((result as any).error.message) || 'Email ou mot de passe incorrect');
       } else {
-        toast.error('Email ou mot de passe incorrect');
+        const user = (result as any).user || result;
+        toast.success('Connexion réussie !', {
+          description: `Bienvenue ${user?.name || user?.email}`,
+        });
       }
     } catch (error) {
+      console.error('Login exception', error);
       toast.error('Une erreur est survenue lors de la connexion');
     } finally {
       setIsLoading(false);
@@ -91,13 +100,6 @@ export function AuthPage({ onAuthSuccess }: AuthPageProps) {
           <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-2">
             <span className="text-3xl">🙏</span>
           </div>
-          <div className="mx-auto w-24 h-24 rounded-xl overflow-hidden mb-2 bg-primary/10 flex items-center justify-center">
-            <img
-              src="../public/rebbe-back.png"
-              alt="Rebbe"
-              className="w-full h-full object-cover"
-            />
-+          </div>
           <CardTitle className="text-2xl">Give Maasser</CardTitle>
           <CardDescription>
             Gérez vos dons et votre maasser
