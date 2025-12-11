@@ -148,7 +148,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       {isAuthenticated && <UserMenu user={user} onLogout={logout} />}
-      <main className="max-w-lg mx-auto px-4 pt-6 pb-24">
+      <main className="max-w-lg mx-auto px-4">
         {renderContent()}
       </main>
       
